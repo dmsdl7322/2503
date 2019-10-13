@@ -1,0 +1,79 @@
+import math
+import matplotlib.pyplot as plt
+
+# 용액의 액성, 이온화 상수, 부피, 몰농도와 표준 용액의 부피, 몰농도를 입력받음
+
+a = input('적정할 용액의 액성을 입력해주세요 : ')
+k = float(input('적정할 용액의 이온화 상수를 입력해주세요 :'))
+v1 = float(input('그 용액의 부피(L)는 얼마입니까? : '))
+c1 = float(input('그 용액의 몰농도(mol/L)는 얼마입니까? : '))
+v2 = float(input('표준용액의 부피(L)는 얼마입니까? : '))
+c2 = float(input('표준용액의 몰농도(mol/L)는 얼마입니까? : '))
+
+# 당량점에 도달하기 위한 부피값
+# v와 v미만, v초과일 때 계산 방식이 달라서 구분해야 한다
+# v에서는 짝염기, 짝산의 가수분해, v미만에서는 헨더슨-하셀바흐, v초과에서는 강산, 강염기가 남은 몰수를 이용해 계산하기 때문
+
+v = c1*v1 / c2
+
+volume = [] # 2v만큼까지 그래프를 그리고자 0부터 2v까지 100등분한 값을 담을 리스트 (그래프 그릴 때 x축)
+pH = [] #이후 범위에 따라 계산하고 순서대로 대응되는 pH값을 담을 리스트 (그래프 그릴 때 x축)
+
+#100등분해서 리스트에 순서대로 넣는 것
+for i in range(100) :
+    volume.append((v*(i+1)/50))
+
+# 49 index는 v인데 반올림되어 로그항에서 음수가 나올 가능성이 있어 따로 빼 계산하고 이후에 넣을 것
+volume.remove(volume[49])
+
+# 구하고자 하는 v2의 pH는 리스트 맨 끝에 넣어 같이 계산하고 이후 pop해서 없앨 것
+volume.append(v2)
+
+if a == '산' :
+    # 표준용액을 넣지 않은 용액의 pH는 volume에 0값이 없어서 따로 계산해야 함
+    pH0 = -0.5*math.log10(k*c1)
+    
+    # volume 내의 용액 부피별로 계산, 값이 v 일 때를 빼서 v 초과와 v 미만 두 케이스
+    
+    for i in volume :
+        # 당량점 이전에는 헨더슨 하셀바흐 식 이용
+        if i < v :
+            pH.append(-math.log10(k)+math.log10((c2*i)/(c1*v1-c2*i)))
+        
+        # 당량점 이후에는 강염기가 들어가 몰 수를 이용해 계산할 수 있슴
+        else :
+            pH.append(14 + math.log10((i*c2-v1*c1)/(i+v1)))
+    # 그래프를 그리기 위해서 volume의 첫번째에 부피가 0일 때, pH의 첫번째에 그때의 pH를 insert
+    volume.insert(0, 0)    
+    pH.insert(0, pH0)
+    
+    # 계산을 위해 넣고 그래프에는 불필요한 마지막 항을 pop, pH값은 print
+    volume.pop()
+    print(pH.pop())
+    
+    # insert가 되어서 49번째가 아니라 50번째에 v와 해당하는 pH를 가수분해를 고려해 계산한 것을 리스트에 넣어준다
+    volume.insert(50, v)
+    pH.insert(50, (14+0.5*math.log10((c1*v1/(v+v1))*(10**(-14))/k)))
+
+#염기일 때 같은 방식으로 구한 과정
+else :
+    
+    pH0 = 14 + math.log10(((k*c1)**0.5))
+    
+    for i in volume :
+        if i < v :
+            pH.append(14+math.log10(k)+math.log10((c1*v1-c2*i)/(c2*i)))
+        else :
+            pH.append(-math.log10((i*c2-v1*c1)/(i+v1)))
+    volume.insert(0, 0)    
+    pH.insert(0, pH0)
+    
+    volume.pop()
+    print(pH.pop())
+    
+    volume.insert(50, v)
+    pH.insert(50, (-0.5*math.log10((c1*v1/(i+v1))*(10**(-14))/k)))
+    
+#그래프 그리기
+plt.plot(volume, pH)
+plt.show()
